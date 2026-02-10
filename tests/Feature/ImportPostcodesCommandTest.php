@@ -40,9 +40,9 @@ it('imports postcodes from a valid CSV with headers', function () {
     $this->artisan('import:postcodes', ['--path' => $this->csvPath, '--sync' => true])
         ->assertSuccessful();
 
-    expect(Postcode::count())->toBe(2);
-    expect(Postcode::where('postcode', 'SW1A 1AA')->exists())->toBeTrue();
-    expect(Postcode::where('postcode', 'EC1A 1BB')->exists())->toBeTrue();
+    expect(Postcode::count())->toBe(2)
+        ->and(Postcode::where('postcode', 'SW1A 1AA')->exists())->toBeTrue()
+        ->and(Postcode::where('postcode', 'EC1A 1BB')->exists())->toBeTrue();
 });
 
 it('normalizes postcodes during import', function () {
@@ -80,8 +80,8 @@ it('skips rows with non-numeric coordinates', function () {
     $this->artisan('import:postcodes', ['--path' => $this->csvPath, '--sync' => true])
         ->assertSuccessful();
 
-    expect(Postcode::count())->toBe(1);
-    expect(Postcode::where('postcode', 'EC1A 1BB')->exists())->toBeTrue();
+    expect(Postcode::count())->toBe(1)
+        ->and(Postcode::where('postcode', 'EC1A 1BB')->exists())->toBeTrue();
 });
 
 it('skips rows with out-of-range coordinates', function () {
@@ -95,8 +95,8 @@ it('skips rows with out-of-range coordinates', function () {
     $this->artisan('import:postcodes', ['--path' => $this->csvPath, '--sync' => true])
         ->assertSuccessful();
 
-    expect(Postcode::count())->toBe(1);
-    expect(Postcode::where('postcode', 'W1J 8EQ')->exists())->toBeTrue();
+    expect(Postcode::count())->toBe(1)
+        ->and(Postcode::where('postcode', 'W1J 8EQ')->exists())->toBeTrue();
 });
 
 it('upserts duplicate postcodes by updating coordinates', function () {
@@ -122,8 +122,8 @@ it('upserts duplicate postcodes by updating coordinates', function () {
     expect(Postcode::where('postcode', 'SW1A 1AA')->count())->toBe(1);
 
     $updated = Postcode::where('postcode', 'SW1A 1AA')->first();
-    expect((float) $updated->latitude)->toBe(51.999999);
-    expect((float) $updated->longitude)->toBe(-0.999999);
+    expect((float)$updated->latitude)->toBe(51.999999)
+        ->and((float)$updated->longitude)->toBe(-0.999999);
 });
 
 it('dispatches a batch when running in async mode', function () {
@@ -140,9 +140,9 @@ it('dispatches a batch when running in async mode', function () {
         Illuminate\Support\Facades\DB::table('job_batches')->value('id')
     );
 
-    expect($batch)->not->toBeNull();
-    expect($batch->name)->toBe('Import Postcodes');
-    expect($batch->totalJobs)->toBe(1);
+    expect($batch)->not->toBeNull()
+        ->and($batch->name)->toBe('Import Postcodes')
+        ->and($batch->totalJobs)->toBe(1);
 });
 
 it('handles CSV with alternative header names', function () {

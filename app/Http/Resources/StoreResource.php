@@ -6,10 +6,10 @@ namespace App\Http\Resources;
 
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\JsonApi\JsonApiResource;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Store */
-final class StoreResource extends JsonApiResource
+final class StoreResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
@@ -24,8 +24,8 @@ final class StoreResource extends JsonApiResource
             'delivery_radius_km' => $this->delivery_radius_km,
             'is_active' => $this->is_active,
             'opening_hours' => $this->opening_hours,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at, //
+            'created_at' => $this->created_at->toDateTimeString(),
+            'updated_at' => $this->updated_at->toDateTimeString(),
         ];
     }
 }

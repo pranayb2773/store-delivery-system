@@ -15,15 +15,15 @@ final class StoreFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(), //
-            'address_line1' => $this->faker->address(),
-            'city' => $this->faker->city(),
-            'postcode' => $this->faker->postcode(),
-            'latitude' => $this->faker->latitude(),
-            'longitude' => $this->faker->longitude(),
-            'delivery_radius_km' => $this->faker->randomFloat(),
-            'is_active' => $this->faker->boolean(),
-            'opening_hours' => $this->faker->words(),
+            'name' => fake()->company(),
+            'address_line1' => fake()->address(),
+            'city' => fake()->city(),
+            'postcode' => mb_strtoupper(fake()->bothify('??## #??')),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
+            'delivery_radius_km' => fake()->randomFloat(2, 1, 50),
+            'is_active' => fake()->boolean(),
+            'opening_hours' => null,
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];

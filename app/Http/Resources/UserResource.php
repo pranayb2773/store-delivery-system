@@ -21,6 +21,8 @@ final class UserResource extends JsonResource
                 'id' => $this->role,
                 'name' => $this->role->getLabel(),
             ],
+            'created_at' => $this->created_at->toDateTimeString(),
+            'updated_at' => $this->updated_at->toDateTimeString(),
         ];
     }
 }

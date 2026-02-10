@@ -15,9 +15,9 @@ final class PostcodeFactory extends Factory
     public function definition(): array
     {
         return [
-            'postcode' => $this->faker->postcode(), //
-            'latitude' => $this->faker->latitude(),
-            'longitude' => $this->faker->longitude(),
+            'postcode' => mb_strtoupper(fake()->bothify('??## #??')),
+            'latitude' => fake()->latitude(),
+            'longitude' => fake()->longitude(),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];

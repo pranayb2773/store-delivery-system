@@ -4,51 +4,28 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreRequest;
+use App\Actions\CreateStoreAction;
+use App\Http\Requests\CreateStoreRequest;
 use App\Http\Resources\StoreResource;
 use App\Models\Store;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 final class StoreController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index()
-    {
-        $this->authorize('viewAny', Store::class);
-
-        return StoreResource::collection(Store::all());
-    }
-
-    public function store(StoreRequest $request)
+    public function store(CreateStoreRequest $request, CreateStoreAction $action): JsonResponse
     {
         $this->authorize('create', Store::class);
 
-        return new StoreResource(Store::create($request->validated()));
-    }
+        $store = $action->handle($request->validated());
 
-    public function show(Store $store)
-    {
-        $this->authorize('view', $store);
-
-        return new StoreResource($store);
-    }
-
-    public function update(StoreRequest $request, Store $store)
-    {
-        $this->authorize('update', $store);
-
-        $store->update($request->validated());
-
-        return new StoreResource($store);
-    }
-
-    public function destroy(Store $store)
-    {
-        $this->authorize('delete', $store);
-
-        $store->delete();
-
-        return response()->json();
+        return response()->json([
+            'success' => true,
+            'message' => 'Store created successfully',
+            'data' => StoreResource::make($store),
+        ], Response::HTTP_CREATED);
     }
 }
