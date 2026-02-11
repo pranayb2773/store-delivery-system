@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Models\Postcode;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\GeoLocationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 uses(RefreshDatabase::class);
 
@@ -313,6 +315,110 @@ describe('pagination', function () {
             ->getJson('/api/stores/nearby?postcode=SW1A+1AA')
             ->assertSuccessful()
             ->assertJsonPath('data.pagination.per_page', 10);
+    });
+});
+
+describe('caching', function () {
+    it('serves cached results on subsequent identical requests', function () {
+        Store::factory()->create([
+            'name' => 'Cached Store',
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'is_active' => true,
+        ]);
+
+        $endpoint = '/api/stores/nearby?postcode=SW1A+1AA';
+
+        $first = $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful();
+
+        $second = $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful();
+
+        expect($first->json('data.stores'))->toEqual($second->json('data.stores'));
+    });
+
+    it('invalidates cache when a store is created', function () {
+        $endpoint = '/api/stores/nearby?postcode=SW1A+1AA';
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful()
+            ->assertJsonPath('data.pagination.total', 0);
+
+        Store::factory()->create([
+            'name' => 'New Store',
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful()
+            ->assertJsonPath('data.pagination.total', 1);
+    });
+
+    it('invalidates cache when a store is updated', function () {
+        $store = Store::factory()->create([
+            'name' => 'Original Name',
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'is_active' => true,
+        ]);
+
+        $endpoint = '/api/stores/nearby?postcode=SW1A+1AA';
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful();
+
+        $store->update(['name' => 'Updated Name']);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful();
+
+        expect($response->json('data.stores.0.name'))->toBe('Updated Name');
+    });
+
+    it('invalidates cache when a store is deleted', function () {
+        $store = Store::factory()->create([
+            'name' => 'Doomed Store',
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'is_active' => true,
+        ]);
+
+        $endpoint = '/api/stores/nearby?postcode=SW1A+1AA';
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful()
+            ->assertJsonPath('data.pagination.total', 1);
+
+        $store->delete();
+
+        $this->actingAs($this->user, 'sanctum')
+            ->getJson($endpoint)
+            ->assertSuccessful()
+            ->assertJsonPath('data.pagination.total', 0);
+    });
+
+    it('increments the cache version key on store changes', function () {
+        $versionBefore = (int) Cache::get(GeoLocationService::CACHE_VERSION_KEY, 0);
+
+        Store::factory()->create([
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'is_active' => true,
+        ]);
+
+        $versionAfter = (int) Cache::get(GeoLocationService::CACHE_VERSION_KEY);
+
+        expect($versionAfter)->toBe($versionBefore + 1);
     });
 });
 

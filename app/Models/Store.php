@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\GeoLocationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 final class Store extends Model
 {
@@ -27,6 +29,18 @@ final class Store extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
+    }
+
+    protected static function booted(): void
+    {
+        $invalidateCache = function (): void {
+            $current = (int) Cache::get(GeoLocationService::CACHE_VERSION_KEY, 0);
+            Cache::forever(GeoLocationService::CACHE_VERSION_KEY, $current + 1);
+        };
+
+        self::created($invalidateCache);
+        self::updated($invalidateCache);
+        self::deleted($invalidateCache);
     }
 
     protected function casts(): array
