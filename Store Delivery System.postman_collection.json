@@ -1,0 +1,227 @@
+{
+  "info": {
+    "_postman_id": "bf2e6e91-6a2a-41ec-a20a-ef8d1dad0bb0",
+    "name": "Store Delivery System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "25556974"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.environment.set(\"accessToken\", pm.response.json().data.token)",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "admin@gmail.com",
+                  "type": "text",
+                  "uuid": "6fcf2c55-51a5-4983-a9ce-e438dd08a7d7"
+                },
+                {
+                  "key": "password",
+                  "value": "password",
+                  "type": "text",
+                  "uuid": "695bd06a-22e7-42eb-b79f-a7b14cf7b083"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/login",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stores",
+      "item": [
+        {
+          "name": "Create Store",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Tesco Express London Bridge\",\n    \"address_line1\": \"Carmodiean center\",\n    \"city\": \"Livingston\",\n    \"postcode\": \"GU14 9AF\",\n    \"delivery_radius_km\": 3.50,\n    \"is_active\": true,\n    \"opening_hours\": {\n        \"monday\": {\n            \"open\": \"07:00\",\n            \"close\": \"22:00\"\n        },\n        \"tuesday\": {\n            \"open\": \"07:00\",\n            \"close\": \"22:00\"\n        },\n        \"wednesday\": {\n            \"open\": \"07:00\",\n            \"close\": \"22:00\"\n        },\n        \"thursday\": {\n            \"open\": \"07:00\",\n            \"close\": \"22:00\"\n        },\n        \"friday\": {\n            \"open\": \"07:00\",\n            \"close\": \"23:00\"\n        },\n        \"saturday\": {\n            \"open\": \"08:00\",\n            \"close\": \"23:00\"\n        },\n        \"sunday\": {\n            \"open\": \"10:00\",\n            \"close\": \"16:00\"\n        }\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/stores",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "stores"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Near By Stores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/stores/nearby?postcode=ZE1 0JZ&radius=10",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "stores",
+                "nearby"
+              ],
+              "query": [
+                {
+                  "key": "postcode",
+                  "value": "ZE1 0JZ"
+                },
+                {
+                  "key": "radius",
+                  "value": "10"
+                },
+                {
+                  "key": "per_page",
+                  "value": "2",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "open_now",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Can Deliver",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/stores/can-deliver?postcode=ZE1 0JZ",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "stores",
+                "can-deliver"
+              ],
+              "query": [
+                {
+                  "key": "postcode",
+                  "value": "ZE1 0JZ",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
