@@ -30,6 +30,15 @@ final readonly class CheckDeliveryAction
             storeId: $storeId,
         );
 
+        $basePreparationMinutes = (float) config('delivery.base_preparation_minutes');
+        $averageSpeedKmh = (float) config('delivery.average_speed_kmh');
+
+        $stores->each(function ($store) use ($basePreparationMinutes, $averageSpeedKmh): void {
+            $distanceKm = (float) $store->getAttribute('distance_km');
+            $estimatedMinutes = (int) ceil($basePreparationMinutes + ($distanceKm / $averageSpeedKmh) * 60);
+            $store->setAttribute('estimated_delivery_minutes', $estimatedMinutes);
+        });
+
         return [
             'search_location' => [
                 'postcode' => $data['postcode'],

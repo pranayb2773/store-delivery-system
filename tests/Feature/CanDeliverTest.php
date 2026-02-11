@@ -171,6 +171,68 @@ describe('filtering', function () {
     });
 });
 
+describe('delivery time estimation', function () {
+    it('includes estimated_delivery_minutes in response', function () {
+        Store::factory()->create([
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'delivery_radius_km' => 5.00,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/stores/can-deliver?postcode=SW1A+1AA')
+            ->assertSuccessful();
+
+        $store = $response->json('data.stores.0');
+        expect($store)->toHaveKey('estimated_delivery_minutes')
+            ->and($store['estimated_delivery_minutes'])->toBeInt();
+    });
+
+    it('calculates correctly based on distance', function () {
+        Store::factory()->create([
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'delivery_radius_km' => 5.00,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/stores/can-deliver?postcode=SW1A+1AA')
+            ->assertSuccessful();
+
+        $store = $response->json('data.stores.0');
+        $distanceKm = $store['distance_km'];
+        $expected = (int) ceil(15 + ($distanceKm / 30) * 60);
+
+        expect($store['estimated_delivery_minutes'])->toBe($expected);
+    });
+
+    it('respects config values', function () {
+        Store::factory()->create([
+            'latitude' => 51.5035,
+            'longitude' => -0.1130,
+            'delivery_radius_km' => 5.00,
+            'is_active' => true,
+        ]);
+
+        config([
+            'delivery.base_preparation_minutes' => 10,
+            'delivery.average_speed_kmh' => 60,
+        ]);
+
+        $response = $this->actingAs($this->user, 'sanctum')
+            ->getJson('/api/stores/can-deliver?postcode=SW1A+1AA')
+            ->assertSuccessful();
+
+        $store = $response->json('data.stores.0');
+        $distanceKm = $store['distance_km'];
+        $expected = (int) ceil(10 + ($distanceKm / 60) * 60);
+
+        expect($store['estimated_delivery_minutes'])->toBe($expected);
+    });
+});
+
 describe('response structure', function () {
     it('includes search_location with postcode and coordinates', function () {
         $response = $this->actingAs($this->user, 'sanctum')
