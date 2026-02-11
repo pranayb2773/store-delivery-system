@@ -6,10 +6,13 @@ namespace Database\Seeders;
 
 use App\Models\Postcode;
 use App\Models\Store;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 final class StoreSeeder extends Seeder
 {
+    use WithoutModelEvents;
+
     private const int STORE_COUNT = 10000;
 
     private const array OPENING_HOURS_PRESETS = [
