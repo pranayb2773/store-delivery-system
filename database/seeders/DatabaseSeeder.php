@@ -26,5 +26,7 @@ final class DatabaseSeeder extends Seeder
             'name' => 'User',
             'email' => 'user@gmail.com',
         ]);
+
+        $this->call(StoreSeeder::class);
     }
 }

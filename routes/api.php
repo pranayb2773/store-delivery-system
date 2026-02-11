@@ -13,4 +13,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/stores', [StoreController::class, 'store'])->name('stores.create');
 
+    Route::get('/stores/nearby', [StoreController::class, 'nearbyStores'])->name('stores.nearby');
 });
