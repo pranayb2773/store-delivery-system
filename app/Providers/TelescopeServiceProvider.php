@@ -24,7 +24,7 @@ final class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
         $isLocal = $this->app->environment('local');
 
         if ($this->app->runningInConsole()) {
-            Telescope::filter(fn (): bool => false);
+            Telescope::stopRecording();
 
             return;
         }
