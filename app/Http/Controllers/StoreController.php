@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\CheckDeliveryAction;
 use App\Actions\CreateStoreAction;
 use App\Actions\GetNearByStoresAction;
+use App\Http\Requests\CanDeliverRequest;
 use App\Http\Requests\CreateStoreRequest;
 use App\Http\Requests\NearByStoresRequest;
 use App\Http\Resources\StoreResource;
@@ -29,6 +31,20 @@ final class StoreController extends Controller
             'message' => 'Store created successfully',
             'data' => StoreResource::make($store),
         ], Response::HTTP_CREATED);
+    }
+
+    public function canDeliver(CanDeliverRequest $request, CheckDeliveryAction $action): JsonResponse
+    {
+        $result = $action->handle($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'search_location' => $result['search_location'],
+                'can_deliver' => $result['can_deliver'],
+                'stores' => StoreResource::collection($result['stores']),
+            ],
+        ]);
     }
 
     public function nearbyStores(NearByStoresRequest $request, GetNearByStoresAction $action): JsonResponse

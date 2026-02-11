@@ -21,10 +21,10 @@ final class StoreResource extends JsonResource
             'postcode' => $this->postcode,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'distance_km' => $this->when($this->resource->getAttribute('distance_km') !== null, fn () => round((float) $this->resource->getAttribute('distance_km'), 2)),
             'delivery_radius_km' => $this->delivery_radius_km,
             'is_active' => $this->is_active,
             'opening_hours' => $this->opening_hours,
-            'distance_km' => $this->when($this->resource->getAttribute('distance_km') !== null, fn () => round((float) $this->resource->getAttribute('distance_km'), 2)),
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
         ];

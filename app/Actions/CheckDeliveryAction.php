@@ -6,15 +6,15 @@ namespace App\Actions;
 
 use App\Models\Postcode;
 use App\Services\GeoLocationService;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
-final readonly class GetNearByStoresAction
+final readonly class CheckDeliveryAction
 {
     public function __construct(private GeoLocationService $geoLocationService) {}
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{search_location: array<string, mixed>, stores: LengthAwarePaginator}
+     * @return array{search_location: array<string, mixed>, can_deliver: bool, stores: Collection}
      */
     public function handle(array $data): array
     {
@@ -22,18 +22,12 @@ final readonly class GetNearByStoresAction
             ->where('postcode', $data['postcode'])
             ->firstOrFail();
 
-        $radiusKm = (float) ($data['radius'] ?? 10);
-        $perPage = (int) ($data['per_page'] ?? 10);
-        $openNow = (bool) ($data['open_now'] ?? false);
-        $page = (int) ($data['page'] ?? 1);
+        $storeId = isset($data['store_id']) ? (int) $data['store_id'] : null;
 
-        $stores = $this->geoLocationService->findNearbyStores(
+        $stores = $this->geoLocationService->findDeliveringStores(
             latitude: (float) $postcode->latitude,
             longitude: (float) $postcode->longitude,
-            radiusKm: $radiusKm,
-            perPage: $perPage,
-            openNow: $openNow,
-            page: $page,
+            storeId: $storeId,
         );
 
         return [
@@ -41,8 +35,8 @@ final readonly class GetNearByStoresAction
                 'postcode' => $data['postcode'],
                 'latitude' => $postcode->latitude,
                 'longitude' => $postcode->longitude,
-                'radius_km' => $radiusKm,
             ],
+            'can_deliver' => $stores->isNotEmpty(),
             'stores' => $stores,
         ];
     }
