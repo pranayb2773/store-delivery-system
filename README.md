@@ -1,59 +1,265 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Store Delivery System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel 12 REST API for managing store locations, checking delivery coverage, and discovering nearby stores using geolocation.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Authentication** - Token-based API auth via Laravel Sanctum with rate-limited login
+- **Store Management** - Admin-only store creation with postcode-based geolocation
+- **Delivery Coverage** - Check if any store can deliver to a given UK postcode, with estimated delivery time
+- **Nearby Stores** - Find stores within a configurable radius using the haversine formula, with pagination and open-now filtering
+- **Postcode Import** - Bulk import UK postcodes from CSV via queued batch jobs or sync mode
+- **Caching** - Redis-backed query caching with automatic invalidation on model changes
+- **Monitoring** - Laravel Telescope for request/query/job debugging
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **PHP** 8.4 / **Laravel** 12
+- **MySQL** 8.4 - Primary database
+- **Redis** - Cache, queue, and session store
+- **Laravel Sanctum** - API token authentication
+- **Laravel Horizon** - Queue monitoring dashboard
+- **Laravel Telescope** - Application debugging
+- **Pest** 4 - Testing framework
+- **Docker** via Laravel Sail
 
-## Learning Laravel
+## Getting Started
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Prerequisites
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-## Laravel Sponsors
+### Installation
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+# Clone the repository
+git clone <repository-url>
+cd store-delivery-system
 
-### Premium Partners
+# Copy environment file
+cp .env.example .env
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Install PHP dependencies (no local PHP/Composer required)
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/var/www/html" \
+    -w /var/www/html \
+    laravelsail/php84-composer:latest \
+    composer install --ignore-platform-reqs
 
-## Contributing
+# Start Docker containers
+./vendor/bin/sail up -d
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Generate application key
+./vendor/bin/sail artisan key:generate
 
-## Code of Conduct
+# Run database migrations
+./vendor/bin/sail artisan migrate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Import postcodes from CSV (required before seeding)
+./vendor/bin/sail artisan import:postcodes --path=postcodes.csv --sync
 
-## Security Vulnerabilities
+# Seed the database (optional — requires postcodes)
+./vendor/bin/sail artisan db:seed
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Running Without Docker (Laravel Herd)
 
-## License
+If using [Laravel Herd](https://herd.laravel.com), update your `.env` to use SQLite or a local MySQL instance and set `CACHE_STORE`, `QUEUE_CONNECTION`, and `SESSION_DRIVER` as needed.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Database Schema
+
+```
+┌───────────────────────────────┐       ┌───────────────────────────────────┐
+│            users              │       │     personal_access_tokens        │
+├───────────────────────────────┤       ├───────────────────────────────────┤
+│ id             BIGINT PK      │◄──────│ tokenable_id   BIGINT FK         │
+│ name           VARCHAR        │       │ tokenable_type VARCHAR            │
+│ email          VARCHAR UQ     │       │ id             BIGINT PK          │
+│ email_verified_at TIMESTAMP   │       │ name           TEXT                │
+│ role           TINYINT [1,2]  │       │ token          VARCHAR(64) UQ     │
+│ password       VARCHAR        │       │ abilities      TEXT                │
+│ remember_token VARCHAR        │       │ last_used_at   TIMESTAMP           │
+│ created_at     TIMESTAMP      │       │ expires_at     TIMESTAMP           │
+│ updated_at     TIMESTAMP      │       │ created_at     TIMESTAMP           │
+└───────────────────────────────┘       │ updated_at     TIMESTAMP           │
+                                        └───────────────────────────────────┘
+┌───────────────────────────────┐
+│           stores              │       ┌───────────────────────────────────┐
+├───────────────────────────────┤       │          postcodes                │
+│ id             BIGINT PK      │       ├───────────────────────────────────┤
+│ name           VARCHAR        │       │ id             BIGINT PK          │
+│ address_line1  VARCHAR        │       │ postcode       VARCHAR UQ         │
+│ city           VARCHAR        │       │ latitude       DECIMAL(11,7)      │
+│ postcode       VARCHAR   IDX  │       │ longitude      DECIMAL(11,7)      │
+│ latitude       DECIMAL(11,7)  │       │ created_at     TIMESTAMP           │
+│ longitude      DECIMAL(11,7)  │       │ updated_at     TIMESTAMP           │
+│ delivery_radius_km DEC(6,2)   │       └───────────────────────────────────┘
+│ is_active      BOOLEAN   IDX  │
+│ opening_hours  JSON           │       ┌───────────────────────────────────┐
+│ created_at     TIMESTAMP      │       │          sessions                 │
+│ updated_at     TIMESTAMP      │       ├───────────────────────────────────┤
+├───────────────────────────────┤       │ id             VARCHAR PK         │
+│ UQ (name, postcode)           │       │ user_id        BIGINT FK ──►users │
+│ IDX (latitude, longitude)     │       │ ip_address     VARCHAR(45)        │
+└───────────────────────────────┘       │ user_agent     TEXT                │
+                                        │ payload        LONGTEXT            │
+                                        │ last_activity  INTEGER IDX         │
+                                        └───────────────────────────────────┘
+```
+
+**Relationships:**
+- `personal_access_tokens.tokenable` → polymorphic to `users` (Sanctum auth tokens)
+- `sessions.user_id` → `users.id`
+- `stores.postcode` references postcodes logically (no FK constraint — coordinates are copied at creation)
+
+## API Endpoints
+
+All API routes return JSON responses. Authenticated routes require a `Bearer` token in the `Authorization` header.
+
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/login` | No | Login and receive an API token |
+| POST | `/api/logout` | Yes | Revoke the current token |
+
+### Stores
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/stores` | Yes (Admin) | Create a new store |
+| GET | `/api/stores/can-deliver` | Yes | Check delivery coverage for a postcode |
+| GET | `/api/stores/nearby` | Yes | Find nearby stores by postcode |
+
+### Example Requests
+
+**Login:**
+```bash
+curl -X POST /api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password"}'
+```
+
+**Create Store (Admin):**
+```bash
+curl -X POST /api/stores \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {token}" \
+  -d '{
+    "name": "London Bridge Store",
+    "address_line1": "1 London Bridge St",
+    "city": "London",
+    "postcode": "SE1 9GF",
+    "delivery_radius_km": 8,
+    "is_active": true,
+    "opening_hours": {
+      "monday": {"open": "09:00", "close": "21:00"},
+      "tuesday": {"open": "09:00", "close": "21:00"},
+      "wednesday": {"open": "09:00", "close": "21:00"},
+      "thursday": {"open": "09:00", "close": "21:00"},
+      "friday": {"open": "09:00", "close": "22:00"},
+      "saturday": {"open": "10:00", "close": "22:00"},
+      "sunday": {"open": "10:00", "close": "18:00"}
+    }
+  }'
+```
+
+**Check Delivery Coverage:**
+```bash
+curl "/api/stores/can-deliver?postcode=SW1A+1AA" \
+  -H "Authorization: Bearer {token}"
+```
+
+**Find Nearby Stores:**
+```bash
+curl "/api/stores/nearby?postcode=SW1A+1AA&radius=5&open_now=true" \
+  -H "Authorization: Bearer {token}"
+```
+
+## Importing Postcodes
+
+Import UK postcodes from a CSV file containing postcode, latitude, and longitude columns:
+
+```bash
+# Async (via queue) - recommended for large files
+./vendor/bin/sail artisan import:postcodes --path=postcodes.csv
+
+# Synchronous
+./vendor/bin/sail artisan import:postcodes --path=postcodes.csv --sync
+
+# CSV without header row
+./vendor/bin/sail artisan import:postcodes --path=postcodes.csv --no-header
+```
+
+Start a queue worker to process batched imports:
+
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+## Configuration
+
+Delivery estimation settings in `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DELIVERY_BASE_PREPARATION_MINUTES` | 15 | Base preparation time added to every delivery estimate |
+| `DELIVERY_AVERAGE_SPEED_KMH` | 30 | Average delivery speed used for time calculation |
+
+## Testing
+
+```bash
+# Run all tests
+./vendor/bin/sail artisan test
+
+# Run with compact output
+./vendor/bin/sail artisan test --compact
+
+# Filter specific tests
+./vendor/bin/sail artisan test --filter=CanDeliverTest
+```
+
+## Code Style
+
+This project uses [Laravel Pint](https://laravel.com/docs/pint) for code formatting:
+
+```bash
+vendor/bin/pint
+```
+
+## Docker Services
+
+| Service | Image | Port |
+|---------|-------|------|
+| App | PHP 8.4 (Sail) | 8080 |
+| MySQL | mysql:8.4 | 3306 |
+| Redis | redis:alpine | 6379 |
+
+```bash
+# Start containers
+./vendor/bin/sail up -d
+
+# Stop containers
+./vendor/bin/sail down
+```
+
+## Project Structure
+
+```
+app/
+├── Actions/            # Single-responsibility business logic
+├── Console/Commands/   # Artisan commands (import:postcodes)
+├── Enums/              # UserRole enum
+├── Http/
+│   ├── Controllers/    # Auth & Store controllers
+│   ├── Middleware/      # ForceJsonResponse for API routes
+│   └── Requests/       # Form request validation
+├── Jobs/               # ProcessPostcodeBatch queue job
+├── Models/             # User, Store, Postcode
+├── Policies/           # StorePolicy (admin authorization)
+├── Resources/          # API resource transformers
+└── Services/           # GeoLocationService (haversine queries)
+config/
+└── delivery.php        # Delivery estimation config
+```
